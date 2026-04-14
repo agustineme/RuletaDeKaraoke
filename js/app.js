@@ -433,8 +433,7 @@ function playKaraoke() {
   document.getElementById('pv2-challenge-badge').textContent =
     `${state.currentChallenge.emoji} ${state.currentChallenge.text}`;
 
-  showScreen('none'); // hide all screens → iframe at z-index:1 becomes visible
-  document.getElementById('screen-player-v2').classList.remove('hidden');
+  document.getElementById('screen-player-v2').classList.remove('pv2-off');
   hidePv2Error();
   _iframeErrorShown = false;
   _logEntry('LOAD', `${song.title} — ${song.artist}  id=${song.videoId}`);
@@ -500,7 +499,7 @@ function hideYtError() {
 function endRound() {
   _iframeErrorShown = false;
   _postToFrame({ cmd: 'stop' });
-  document.getElementById('screen-player-v2').classList.add('hidden');
+  document.getElementById('screen-player-v2').classList.add('pv2-off');
   advancePlayer();
   updateHomePlayerDisplay();
   showScreen('home');
@@ -690,7 +689,7 @@ function bindEvents() {
   document.getElementById('pv2-btn-skip').addEventListener('click', () => {
     _iframeErrorShown = false;
     _postToFrame({ cmd: 'stop' });
-    document.getElementById('screen-player-v2').classList.add('hidden');
+    document.getElementById('screen-player-v2').classList.add('pv2-off');
     if (state.changesLeft > 0) {
       state.changesLeft--;
       showScreen('result');

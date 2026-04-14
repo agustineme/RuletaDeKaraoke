@@ -9,15 +9,6 @@
 </head>
 <body>
 
-  <!-- Karaoke iframe — always in DOM at z-index:1, below all screens.
-       Its own document has full viewport, so YouTube always sees it as visible. -->
-  <iframe
-    id="karaoke-frame"
-    src="karaoke-player.html"
-    allow="autoplay; encrypted-media"
-    allowfullscreen
-    referrerpolicy="strict-origin-when-cross-origin"
-  ></iframe>
 
   <!-- ══════════════════════════════════════════════════════
        SCREEN 1 — HOME
@@ -260,7 +251,7 @@
        Uses pv2-off (opacity only, never display:none) so the
        YT.Player iframe lives in the DOM from API-ready onward.
        ══════════════════════════════════════════════════════ -->
-  <div id="screen-player-v2" class="hidden">
+  <div id="screen-player-v2" class="pv2-off">
 
     <div class="pv2-header">
       <div class="pv2-song-info">
@@ -271,6 +262,16 @@
     </div>
 
     <div class="pv2-yt-wrap">
+      <!-- Karaoke iframe -->
+      <iframe
+        id="karaoke-frame"
+        src="karaoke-player.html"
+        allow="autoplay; encrypted-media"
+        allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin"
+        style="position:absolute;inset:0;width:100%;height:100%;border:none;"
+      ></iframe>
+
       <!-- Error overlay (reuses existing .yt-error-overlay styles) -->
       <div class="yt-error-overlay hidden" id="pv2-error-overlay">
         <div class="yt-error-icon">😬</div>
@@ -302,7 +303,7 @@
   <!-- ── Scripts ──────────────────────────────────────────────── -->
   <script src="js/data.js?v=7"></script>
   <script src="js/wheel.js?v=7"></script>
-  <script src="js/app.js?v=20"></script>
+  <script src="js/app.js?v=21"></script>
   <!-- YouTube IFrame API lives inside karaoke-player.html, not here -->
 
 </body>
