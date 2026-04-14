@@ -199,6 +199,74 @@ function spinVisor(song, challenge, onComplete) {
   if (tapeChallenge) animateTape(tapeChallenge, targetYChallenge,  DURATION * 1.08, () => { chalDone = true; check(); });
 }
 
+// ── Spin sound ─────────────────────────────────────────────────
+// Synthesised mechanical roulette sound — no audio files needed.
+// Clicks are timed to match the quintic ease-out of the tape animation
+// (many clicks/sec at the start, slowing to a stop over 3.7 s).
+
+function playSpinSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx  = new AudioCtx();
+    const now  = ctx.currentTime;
+    const dur  = 3.8; // seconds — slightly past DURATION so ticks finish cleanly
+
+    // ── Subtle rolling noise underneath ──────────────────────────
+    const bufLen  = Math.ceil(ctx.sampleRate * dur);
+    const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const nd       = noiseBuf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) nd[i] = Math.random() * 2 - 1;
+
+    const noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = noiseBuf;
+
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 550;
+    bp.Q.value = 0.7;
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0,    now);
+    noiseGain.gain.linearRampToValueAtTime(0.035, now + 0.08);
+    noiseGain.gain.setValueAtTime(0.035, now + dur - 0.5);
+    noiseGain.gain.linearRampToValueAtTime(0, now + dur);
+
+    noiseSrc.connect(bp);
+    bp.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noiseSrc.start(now);
+    noiseSrc.stop(now + dur);
+
+    // ── Clicks — one per tape item, timed via inverse quintic ────
+    // TAPE_PRE_ITEMS = 48; animation = 3700 ms; ease = 1-(1-t)^5
+    // Inverse: t = 1 - (1-eased)^0.2  →  gives real time for each item
+    const items = TAPE_PRE_ITEMS; // 48
+    for (let i = 0; i <= items; i++) {
+      const eased   = i / items;
+      const t       = 1 - Math.pow(Math.max(0, 1 - eased), 0.2);
+      const tickAt  = now + t * 3.7;
+
+      const tGain = ctx.createGain();
+      tGain.gain.setValueAtTime(0,    tickAt);
+      tGain.gain.linearRampToValueAtTime(0.22, tickAt + 0.003);
+      tGain.gain.exponentialRampToValueAtTime(0.001, tickAt + 0.045);
+
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(380, tickAt);
+      osc.frequency.exponentialRampToValueAtTime(190, tickAt + 0.045);
+
+      osc.connect(tGain);
+      tGain.connect(ctx.destination);
+      osc.start(tickAt);
+      osc.stop(tickAt + 0.05);
+    }
+
+    setTimeout(() => { try { ctx.close(); } catch (_) {} }, (dur + 0.5) * 1000);
+  } catch (_) {}
+}
+
 // ── Spin ───────────────────────────────────────────────────────
 
 function doSpin(isReroll = false) {
@@ -222,6 +290,7 @@ function doSpin(isReroll = false) {
   if (!isReroll) {
     showScreen('spinning');
     updateSpinPlayerBadge();
+    playSpinSound();
     spinVisor(song, state.currentChallenge, showResult);
   } else {
     // Quick reroll — stay on result screen, show mini visor overlay
