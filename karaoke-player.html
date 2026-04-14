@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+    #yt { width: 100%; height: 100%; }
+    #yt iframe { width: 100% !important; height: 100% !important; display: block; }
+  </style>
+</head>
+<body>
+  <div id="yt"></div>
+  <script>
+    let player = null;
+    let ready  = false;
+
+    window.onYouTubeIframeAPIReady = function () {
+      player = new YT.Player('yt', {
+        host:   'https://www.youtube-nocookie.com',
+        height: '100%',
+        width:  '100%',
+        playerVars: {
+          autoplay:       1,
+          controls:       1,
+          modestbranding: 1,
+          rel:            0,
+          fs:             0,
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          playsinline:    1,
+        },
+        events: {
+          onReady: () => {
+            ready = true;
+            parent.postMessage({ event: 'ready' }, '*');
+          },
+          onStateChange: (e) => {
+            parent.postMessage({ event: 'state', data: e.data }, '*');
+          },
+          onError: (e) => {
+            parent.postMessage({ event: 'error', code: e.data }, '*');
+          },
+        },
+      });
+    };
+
+    window.addEventListener('message', ({ data: msg }) => {
+      if (!player || !ready) return;
+      if (msg.cmd === 'load') {
+        try { player.unMute(); } catch (_) {}
+        player.loadVideoById({ videoId: msg.videoId, startSeconds: 0 });
+      } else if (msg.cmd === 'stop') {
+        try { player.mute(); player.pauseVideo(); } catch (_) {}
+      }
+    });
+  </script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

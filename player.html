@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ruleta de Karaoke 🎤</title>
+  <link rel="stylesheet" href="css/style.css?v=7" />
+  <style>
+    /* Make body itself the flex column — no screen system needed */
+    body { display: flex; flex-direction: column; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="player-header">
+    <div class="player-song-info">
+      <div class="player-song-title"  id="pg-title"></div>
+      <div class="player-song-artist" id="pg-artist"></div>
+    </div>
+    <div class="player-challenge-badge" id="pg-challenge"></div>
+  </div>
+
+  <!-- YouTube container — always visible, always in DOM, no hiding tricks -->
+  <div class="yt-container">
+    <div id="yt-embed"></div>
+
+    <!-- Error overlay -->
+    <div class="yt-error-overlay hidden" id="pg-error-overlay">
+      <div class="yt-error-icon">😬</div>
+      <div class="yt-error-text" id="pg-error-text">No se pudo cargar el video.</div>
+      <div class="yt-error-note">Este video tiene restricciones de reproducción.</div>
+      <div class="yt-error-actions">
+        <button class="btn-reload-yt" id="pg-btn-retry">↩ Reintentar</button>
+        <button class="btn-change"    id="pg-btn-change">🔄 Otra canción</button>
+      </div>
+      <button class="btn-show-log" id="pg-btn-show-log">📋 Ver log</button>
+    </div>
+
+    <!-- Log overlay -->
+    <div class="log-overlay hidden" id="pg-log-overlay">
+      <pre class="log-pre" id="pg-log-pre"></pre>
+      <div class="log-actions">
+        <button class="btn-copy-log"  id="pg-btn-copy-log">📋 Copiar</button>
+        <button class="btn-close-log" id="pg-btn-close-log">✕ Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="player-footer">
+    <button class="btn-end-round" id="pg-btn-end">⏭ SIGUIENTE RONDA</button>
+  </div>
+
+  <script>
+    // ── URL params ───────────────────────────────────────────────
+    const params    = new URLSearchParams(location.search);
+    const videoId   = params.get('v')         || '';
+    const title     = params.get('title')     || '';
+    const artist    = params.get('artist')    || '';
+    const challenge = params.get('challenge') || '';
+    const changes   = parseInt(params.get('changes') || '0', 10);
+
+    // ── Populate header ──────────────────────────────────────────
+    document.getElementById('pg-title').textContent     = title;
+    document.getElementById('pg-artist').textContent    = artist;
+    document.getElementById('pg-challenge').textContent = challenge;
+
+    // Hide "Otra canción" if no changes left
+    if (changes <= 0) {
+      document.getElementById('pg-btn-change').style.display = 'none';
+    }
+
+    // ── Session log ──────────────────────────────────────────────
+    const _log = [];
+    function logEntry(type, msg) {
+      const ts   = new Date().toISOString().slice(11, 23);
+      const line = `[${ts}] ${type}: ${msg}`;
+      _log.push(line);
+      console.info(line);
+    }
+    window.addEventListener('error', (e) => {
+      logEntry('JS_ERROR', `${e.message} @ ${e.filename}:${e.lineno}`);
+    });
+
+    // ── Error handling ───────────────────────────────────────────
+    let errorShown = false;
+    function showError(code) {
+      if (errorShown) return;
+      errorShown = true;
+      const msgs = {
+        100: 'El video no está disponible o fue eliminado.',
+        101: 'Este video no permite reproducción embebida.',
+        150: 'Este video no permite reproducción embebida.',
+      };
+      logEntry('ERROR', `code=${code} videoId=${videoId}`);
+      document.getElementById('pg-error-text').textContent =
+        msgs[code] || `No se pudo cargar el video. (código ${code})`;
+      document.getElementById('pg-error-overlay').classList.remove('hidden');
+    }
+
+    // ── YouTube Player ───────────────────────────────────────────
+    // Clean page, visible container from the start — same setup as test-embeds.html
+    let player;
+    window.onYouTubeIframeAPIReady = function () {
+      logEntry('YT_API_READY', '');
+      player = new YT.Player('yt-embed', {
+        height: '100%',
+        width:  '100%',
+        playerVars: {
+          autoplay:       1,
+          controls:       1,
+          modestbranding: 1,
+          rel:            0,
+          fs:             0,
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          playsinline:    1,
+        },
+        events: {
+          onReady: () => {
+            logEntry('YT_READY', 'player ready');
+            player.loadVideoById({ videoId, startSeconds: 0 });
+          },
+          onStateChange: (e) => logEntry('YT_STATE', String(e.data)),
+          onError:       (e) => {
+            logEntry('YT_ERROR', `code=${e.data}`);
+            showError(e.data);
+          },
+        },
+      });
+    };
+
+    // ── Navigation ───────────────────────────────────────────────
+    function goHome(action) {
+      const session = JSON.parse(localStorage.getItem('ruleta_session') || '{}');
+      if (action) session.action = action;
+      localStorage.setItem('ruleta_session', JSON.stringify(session));
+      window.location.href = 'index.html';
+    }
+
+    // ── Buttons ──────────────────────────────────────────────────
+    document.getElementById('pg-btn-end').addEventListener('click', () => goHome());
+
+    document.getElementById('pg-btn-retry').addEventListener('click', () => {
+      errorShown = false;
+      document.getElementById('pg-error-overlay').classList.add('hidden');
+      document.getElementById('pg-log-overlay').classList.add('hidden');
+      logEntry('RETRY', videoId);
+      if (player) player.loadVideoById({ videoId, startSeconds: 0 });
+    });
+
+    document.getElementById('pg-btn-change').addEventListener('click', () => goHome('change'));
+
+    document.getElementById('pg-btn-show-log').addEventListener('click', () => {
+      document.getElementById('pg-log-pre').textContent = _log.join('\n') || '(vacío)';
+      document.getElementById('pg-log-overlay').classList.remove('hidden');
+    });
+    document.getElementById('pg-btn-close-log').addEventListener('click', () => {
+      document.getElementById('pg-log-overlay').classList.add('hidden');
+    });
+    document.getElementById('pg-btn-copy-log').addEventListener('click', () => {
+      navigator.clipboard.writeText(_log.join('\n')).then(() => {
+        const btn = document.getElementById('pg-btn-copy-log');
+        btn.textContent = '✓ Copiado';
+        setTimeout(() => { btn.textContent = '📋 Copiar'; }, 1500);
+      });
+    });
+  </script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+</body>
+</html>

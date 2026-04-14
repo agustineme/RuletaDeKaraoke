@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Ruleta de Karaoke — el party game que elige la canción y el desafío por vos." />
+  <title>Ruleta de Karaoke 🎤</title>
+  <link rel="stylesheet" href="css/style.css?v=7" />
+</head>
+<body>
+
+  <!-- Karaoke iframe — always in DOM at z-index:1, below all screens.
+       Its own document has full viewport, so YouTube always sees it as visible. -->
+  <iframe
+    id="karaoke-frame"
+    src="karaoke-player.html"
+    allow="autoplay; encrypted-media"
+    allowfullscreen
+    referrerpolicy="strict-origin-when-cross-origin"
+  ></iframe>
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN 1 — HOME
+       ══════════════════════════════════════════════════════ -->
+  <div id="screen-home" class="screen active">
+
+    <!-- Decorative light beams -->
+    <div class="home-beams" aria-hidden="true">
+      <div class="beam beam-left"></div>
+      <div class="beam beam-right"></div>
+    </div>
+
+    <!-- Sparkle stars (populated by JS) -->
+    <div class="home-stars" id="home-stars" aria-hidden="true"></div>
+
+    <!-- Centered main content -->
+    <main class="home-main">
+
+      <!-- Logo -->
+      <div class="home-logo" role="heading" aria-label="Ruleta de Karaoke">
+        <div class="logo-top">Ruleta de</div>
+        <div class="logo-frame" id="logo-frame">
+          <span class="logo-karaoke">KARAOKE</span>
+        </div>
+      </div>
+
+      <!-- Tagline -->
+      <p class="home-tagline">La ruleta decide qué cantás y cómo lo sufrís.</p>
+
+      <!-- Current player (visible only when players are set) -->
+      <div class="current-player-display hidden" id="current-player-display">
+        <span class="turn-label">Turno de</span>
+        <span class="turn-name" id="current-player-name"></span>
+      </div>
+
+      <!-- CTA principal -->
+      <button class="btn-girar" id="btn-spin" aria-label="Girar la ruleta">
+        GIRAR
+      </button>
+
+    </main>
+
+    <!-- Configuración — bottom left, secondary -->
+    <button class="btn-config-home" id="btn-config" aria-label="Configuración">
+      <svg class="config-gear" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 15.5A3.5 3.5 0 018.5 12 3.5 3.5 0 0112 8.5a3.5 3.5 0 013.5 3.5 3.5 3.5 0 01-3.5 3.5m7.43-2.92c.04-.34.07-.68.07-1.08s-.03-.74-.07-1.08l2.32-1.82c.21-.16.27-.46.13-.7l-2.2-3.8c-.14-.25-.42-.33-.67-.25l-2.74 1.1c-.57-.44-1.18-.81-1.86-1.08l-.42-2.9C14.22 2.18 13.95 2 13.66 2h-4.4c-.29 0-.56.18-.6.46l-.41 2.9c-.68.27-1.29.64-1.87 1.08L3.64 5.35c-.25-.09-.53 0-.67.25l-2.2 3.8c-.14.24-.08.54.13.7l2.32 1.82c-.04.34-.07.7-.07 1.08s.03.74.07 1.08L.9 15.9c-.21.16-.27.46-.13.7l2.2 3.8c.14.25.42.33.67.25l2.74-1.1c.58.44 1.19.81 1.87 1.08l.41 2.9c.04.28.31.47.6.47h4.4c.29 0 .56-.19.6-.47l.42-2.9c.68-.27 1.29-.64 1.86-1.08l2.74 1.1c.25.08.53 0 .67-.25l2.2-3.8c.14-.24.08-.54-.13-.7l-2.32-1.82z"/>
+      </svg>
+      Configuración
+    </button>
+
+  </div><!-- /screen-home -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN 2 — SPINNING
+       ══════════════════════════════════════════════════════ -->
+  <div id="screen-spinning" class="screen hidden">
+
+    <!-- Player badge (when players are loaded) -->
+    <div class="spin-player-badge hidden" id="spin-player-badge"></div>
+
+    <!-- ── THE VISOR ─────────────────────────────────────────── -->
+    <div class="visor" id="visor">
+
+      <!-- SONG section -->
+      <div class="visor-section">
+        <div class="visor-section-label">CANCIÓN</div>
+        <div class="visor-window" id="window-song">
+          <div class="window-tape" id="tape-song"></div>
+          <div class="window-edge window-edge--left"></div>
+          <div class="window-edge window-edge--right"></div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="visor-divider"></div>
+
+      <!-- CHALLENGE section -->
+      <div class="visor-section">
+        <div class="visor-section-label">DESAFÍO</div>
+        <div class="visor-window visor-window--sm" id="window-challenge">
+          <div class="window-tape" id="tape-challenge"></div>
+          <div class="window-edge window-edge--left"></div>
+          <div class="window-edge window-edge--right"></div>
+        </div>
+      </div>
+
+    </div><!-- /visor -->
+
+    <!-- Subtle status label -->
+    <p class="spin-status" id="spin-status">Girando…</p>
+
+  </div><!-- /screen-spinning -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN 3 — RESULT
+       ══════════════════════════════════════════════════════ -->
+  <div id="screen-result" class="screen hidden">
+
+    <!-- Player badge -->
+    <div class="result-player-badge hidden" id="result-player-badge"></div>
+
+    <!-- Song card -->
+    <div class="result-card song-card" id="result-song-card">
+      <div class="card-eyebrow">🎵 Canción</div>
+      <div id="result-song-title" class="song-title"></div>
+      <div id="result-song-artist" class="song-artist"></div>
+    </div>
+
+    <!-- Challenge card -->
+    <div class="result-card challenge-card" id="result-challenge-card">
+      <div class="card-eyebrow">⚡ Desafío</div>
+      <div class="challenge-inner">
+        <span id="result-challenge-emoji" class="challenge-emoji"></span>
+        <span id="result-challenge-text" class="challenge-text"></span>
+      </div>
+      <div id="result-intensity-badge" class="intensity-badge"></div>
+    </div>
+
+    <!-- Changes counter -->
+    <div class="changes-row" id="result-actions-meta">
+      <span>Cambios restantes:</span>
+      <div id="changes-dots" class="changes-dots" style="display:flex;gap:6px;"></div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="result-actions" id="result-actions">
+      <button class="btn-change" id="btn-change-song">🔄 Cambiar canción</button>
+      <button class="btn-sing"   id="btn-sing">🎤 CANTAR</button>
+    </div>
+
+    <!-- Reroll mini-overlay (shown inside this screen while quick-spinning) -->
+    <div class="reroll-overlay hidden" id="reroll-overlay">
+      <div class="reroll-visor-label">CANCIÓN</div>
+      <div class="reroll-visor-window" id="reroll-window">
+        <div class="window-tape" id="tape-reroll"></div>
+        <div class="window-edge window-edge--left"></div>
+        <div class="window-edge window-edge--right"></div>
+      </div>
+    </div>
+
+  </div><!-- /screen-result -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN 4 — PLAYER (YouTube karaoke)
+       ══════════════════════════════════════════════════════ -->
+  <div id="screen-player" class="screen hidden">
+
+    <div class="player-header">
+      <div class="player-song-info">
+        <div class="player-song-title" id="player-song-title"></div>
+        <div class="player-song-artist" id="player-song-artist"></div>
+      </div>
+      <div class="player-challenge-badge" id="player-challenge-badge"></div>
+    </div>
+
+    <div class="yt-container">
+      <!-- YouTube IFrame API will populate this -->
+      <div id="yt-embed" style="width:100%;height:100%;"></div>
+
+      <!-- Error overlay (shown if embed is blocked) -->
+      <div class="yt-error-overlay hidden" id="yt-error-overlay">
+        <div class="yt-error-icon">😬</div>
+        <div class="yt-error-text" id="yt-error-text">No se pudo cargar el video.</div>
+        <div class="yt-error-note">
+          Este video tiene restricciones de reproducción.
+        </div>
+        <div class="yt-error-actions">
+          <button class="btn-reload-yt" id="btn-yt-reload">↩ Reintentar</button>
+          <button class="btn-change"    id="btn-yt-skip">🔄 Otra canción</button>
+        </div>
+        <button class="btn-show-log" id="btn-show-log">📋 Ver log</button>
+      </div>
+
+      <!-- Log overlay -->
+      <div class="log-overlay hidden" id="log-overlay">
+        <pre class="log-pre" id="log-pre"></pre>
+        <div class="log-actions">
+          <button class="btn-copy-log" id="btn-copy-log">📋 Copiar</button>
+          <button class="btn-close-log" id="btn-close-log">✕ Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-footer">
+      <button class="btn-end-round" id="btn-end-round">⏭ SIGUIENTE RONDA</button>
+    </div>
+
+  </div><!-- /screen-player -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       MODAL — CONFIG
+       ══════════════════════════════════════════════════════ -->
+  <div id="modal-config" class="modal hidden" role="dialog" aria-modal="true" aria-label="Configuración">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ Configuración</h2>
+        <button class="btn-close" id="btn-close-config" aria-label="Cerrar">✕</button>
+      </div>
+
+      <!-- Intensity -->
+      <div class="config-section">
+        <label class="config-label">Intensidad de desafíos</label>
+        <div class="intensity-selector" id="intensity-selector">
+          <button class="intensity-btn" data-value="suave">😊 Suave</button>
+          <button class="intensity-btn active" data-value="estandar">🔥 Estándar</button>
+          <button class="intensity-btn" data-value="picante">🌶️ Picante</button>
+        </div>
+      </div>
+
+      <!-- Players -->
+      <div class="config-section">
+        <label class="config-label">Jugadores <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+        <div id="players-list" class="players-list"></div>
+        <div class="add-player-row">
+          <input
+            type="text"
+            id="player-input"
+            class="player-input"
+            placeholder="Nombre del jugador"
+            maxlength="20"
+            autocomplete="off"
+          />
+          <button class="btn-add-player" id="btn-add-player">+ Agregar</button>
+        </div>
+      </div>
+
+      <button class="btn-save-config" id="btn-save-config">Guardar configuración</button>
+    </div>
+  </div><!-- /modal-config -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       SCREEN PLAYER V2 — built from scratch like test-embeds
+       Uses pv2-off (opacity only, never display:none) so the
+       YT.Player iframe lives in the DOM from API-ready onward.
+       ══════════════════════════════════════════════════════ -->
+  <div id="screen-player-v2" class="hidden">
+
+    <div class="pv2-header">
+      <div class="pv2-song-info">
+        <div class="pv2-song-title"  id="pv2-song-title"></div>
+        <div class="pv2-song-artist" id="pv2-song-artist"></div>
+      </div>
+      <div class="pv2-challenge-badge" id="pv2-challenge-badge"></div>
+    </div>
+
+    <div class="pv2-yt-wrap">
+      <!-- Error overlay (reuses existing .yt-error-overlay styles) -->
+      <div class="yt-error-overlay hidden" id="pv2-error-overlay">
+        <div class="yt-error-icon">😬</div>
+        <div class="yt-error-text" id="pv2-error-text">No se pudo cargar el video.</div>
+        <div class="yt-error-note">Este video tiene restricciones de reproducción.</div>
+        <div class="yt-error-actions">
+          <button class="btn-reload-yt" id="pv2-btn-reload">↩ Reintentar</button>
+          <button class="btn-change"    id="pv2-btn-skip">🔄 Otra canción</button>
+        </div>
+        <button class="btn-show-log" id="pv2-btn-show-log">📋 Ver log</button>
+      </div>
+
+      <!-- Log overlay -->
+      <div class="log-overlay hidden" id="pv2-log-overlay">
+        <pre class="log-pre" id="pv2-log-pre"></pre>
+        <div class="log-actions">
+          <button class="btn-copy-log"  id="pv2-btn-copy-log">📋 Copiar</button>
+          <button class="btn-close-log" id="pv2-btn-close-log">✕ Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-footer">
+      <button class="btn-end-round" id="pv2-btn-end-round">⏭ SIGUIENTE RONDA</button>
+    </div>
+
+  </div><!-- /screen-player-v2 -->
+
+  <!-- ── Scripts ──────────────────────────────────────────────── -->
+  <script src="js/data.js?v=7"></script>
+  <script src="js/wheel.js?v=7"></script>
+  <script src="js/app.js?v=20"></script>
+  <!-- YouTube IFrame API lives inside karaoke-player.html, not here -->
+
+</body>
+</html>

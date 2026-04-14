@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Embed Tester</title>
+  <link rel="stylesheet" href="css/style.css?v=4">
+  <style>
+    /* ── Test UI overlay (on top of game styles) ── */
+    #test-shell {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: #2D1B69;
+      font-family: 'Nunito', sans-serif;
+      color: #fff;
+      z-index: 999;
+    }
+
+    /* Top bar — progress */
+    #test-topbar {
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-wrap: wrap;
+    }
+    #test-counter {
+      font-size: 0.8rem;
+      color: #FFD600;
+      font-weight: 800;
+      min-width: 70px;
+    }
+    #test-song-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #test-status {
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      white-space: nowrap;
+    }
+    #test-status.testing { color: #FFD600; }
+    #test-status.ok      { background: rgba(34,197,94,0.25); color: #4ade80; }
+    #test-status.fail    { background: rgba(239,68,68,0.25); color: #f87171; }
+
+    /* Player area — identical to game */
+    #test-player-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* Same header as game's player-header */
+    #test-player-header {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(45,27,105,0.95) 0%, rgba(45,27,105,0.6) 100%);
+      backdrop-filter: blur(10px);
+      padding: 14px 24px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    #test-title  { font-family: 'Fredoka One', sans-serif; font-size: 1.25rem; }
+    #test-artist { font-size: 0.85rem; font-weight: 700; color: #FF4D8D; }
+
+    /* Same yt-container as game */
+    #test-yt-container {
+      flex: 1;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      min-height: 200px;
+    }
+    #test-yt-embed {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Error overlay — exact same as game */
+    #test-error-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(45,27,105,0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 5;
+    }
+    #test-error-overlay.hidden { display: none; }
+    .test-error-icon { font-size: 3rem; }
+    .test-error-text { font-size: 1rem; font-weight: 700; color: #f87171; text-align: center; }
+    .test-error-code { font-size: 0.8rem; color: rgba(255,255,255,0.4); }
+
+    /* OK overlay */
+    #test-ok-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,40,20,0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    #test-ok-overlay.hidden { display: none; }
+    .test-ok-icon { font-size: 3rem; }
+    .test-ok-text { font-size: 1rem; font-weight: 800; color: #4ade80; }
+
+    /* Bottom controls */
+    #test-controls {
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      flex-wrap: wrap;
+    }
+    .test-btn {
+      padding: 9px 20px;
+      border: none;
+      border-radius: 999px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    #btn-start-test {
+      background: linear-gradient(135deg, #FF4D8D, #A78BFA);
+      color: #fff;
+    }
+    #btn-next-test  { background: rgba(255,255,255,0.12); color: #fff; }
+    #btn-skip-test  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
+    .test-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    #test-auto-label {
+      font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-left: auto;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #chk-auto { width: 16px; height: 16px; cursor: pointer; }
+
+    /* Progress bar */
+    #test-bar-wrap {
+      height: 3px; background: rgba(255,255,255,0.1);
+    }
+    #test-bar { height: 100%; background: #FF4D8D; transition: width 0.4s; }
+
+    /* Results panel */
+    #test-results-panel {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 300px;
+      background: rgba(13,13,26,0.97);
+      border-left: 1px solid rgba(255,255,255,0.1);
+      overflow-y: auto;
+      padding: 12px 8px;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 1000;
+      transform: translateX(100%);
+      transition: transform 0.3s;
+    }
+    #test-results-panel.open { transform: translateX(0); }
+    #test-results-panel h3 { color: #fff; margin-bottom: 8px; font-size: 0.85rem; padding: 0 4px; }
+    .rp-row { padding: 4px 8px; border-radius: 4px; }
+    .rp-row.ok   { color: #4ade80; background: rgba(34,197,94,0.08); }
+    .rp-row.fail { color: #f87171; background: rgba(239,68,68,0.1); }
+
+    /* Toggle results btn */
+    #btn-toggle-results {
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* Summary */
+    #test-summary {
+      position: fixed;
+      inset: 0;
+      background: rgba(13,13,26,0.97);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 32px 24px;
+      overflow-y: auto;
+      z-index: 1001;
+    }
+    #test-summary.visible { display: flex; }
+    #test-summary h2 { color: #fff; margin-bottom: 20px; font-size: 1.3rem; }
+    #test-summary pre {
+      background: #1a1a2e; border: 1px solid #333; border-radius: 8px;
+      padding: 16px; color: #fbbf24; font-size: 0.8rem;
+      white-space: pre-wrap; width: 100%; max-width: 640px;
+      line-height: 1.8;
+    }
+    #btn-restart {
+      margin-top: 20px;
+      background: linear-gradient(135deg, #FF4D8D, #A78BFA);
+      color: #fff; border: none; padding: 12px 28px;
+      border-radius: 999px; font-size: 1rem; font-weight: 800;
+      cursor: pointer; font-family: 'Nunito', sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<div id="test-shell">
+
+  <!-- Progress bar -->
+  <div id="test-bar-wrap"><div id="test-bar" style="width:0%"></div></div>
+
+  <!-- Top bar -->
+  <div id="test-topbar">
+    <span id="test-counter">0 / 100</span>
+    <span id="test-song-name">Presioná Iniciar para comenzar</span>
+    <span id="test-status" class="testing">—</span>
+  </div>
+
+  <!-- Player area (identical to game) -->
+  <div id="test-player-area">
+
+    <div id="test-player-header">
+      <div>
+        <div id="test-title" style="font-family:'Fredoka One',sans-serif;font-size:1.25rem;"></div>
+        <div id="test-artist" style="font-size:.85rem;font-weight:700;color:#FF4D8D;"></div>
+      </div>
+    </div>
+
+    <div id="test-yt-container">
+      <div id="test-yt-embed"></div>
+
+      <!-- Same error overlay as game -->
+      <div id="test-error-overlay" class="hidden">
+        <div class="test-error-icon">😬</div>
+        <div class="test-error-text" id="test-error-text">No se pudo cargar el video.</div>
+        <div class="test-error-code" id="test-error-code"></div>
+      </div>
+
+      <!-- OK overlay -->
+      <div id="test-ok-overlay" class="hidden">
+        <div class="test-ok-icon">✅</div>
+        <div class="test-ok-text">Video OK</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom controls -->
+  <div id="test-controls">
+    <button class="test-btn" id="btn-start-test">▶ Iniciar test</button>
+    <button class="test-btn" id="btn-next-test"  disabled>Siguiente ▶</button>
+    <button class="test-btn" id="btn-skip-test"  disabled>Saltar →</button>
+    <button class="test-btn" id="btn-toggle-results">Ver resultados</button>
+    <label id="test-auto-label">
+      <input type="checkbox" id="chk-shuffle"> Orden aleatorio
+    </label>
+    <label id="test-auto-label">
+      <input type="checkbox" id="chk-auto" checked> Auto-avanzar (5s)
+    </label>
+  </div>
+
+</div><!-- /test-shell -->
+
+<!-- Results panel -->
+<div id="test-results-panel">
+  <h3>Resultados</h3>
+  <div id="rp-list"></div>
+</div>
+
+<!-- Summary screen -->
+<div id="test-summary">
+  <h2>🎬 Test completo</h2>
+  <pre id="summary-pre"></pre>
+  <button id="btn-restart">↩ Reiniciar test</button>
+</div>
+
+<script src="js/data.js"></script>
+<script>
+  // ── State ──────────────────────────────────────────────────────
+  let player       = null;
+  let ytReady      = false;
+  let currentIdx   = -1;       // -1 = not started
+  let testQueue    = [];       // ordered list of songs for this run
+  let autoTimer    = null;     // auto-advance countdown
+  let confirmTimer = null;     // 2s confirmation after PLAYING
+  let hardTimer    = null;     // 8s hard timeout
+  let results      = [];       // { song, ok, reason }
+  let testRunning  = false;
+  let waitingOk    = false;    // true while we wait 2s after PLAYING
+
+  // ── DOM ────────────────────────────────────────────────────────
+  const counterEl    = document.getElementById('test-counter');
+  const songNameEl   = document.getElementById('test-song-name');
+  const statusEl     = document.getElementById('test-status');
+  const titleEl      = document.getElementById('test-title');
+  const artistEl     = document.getElementById('test-artist');
+  const errorOvEl    = document.getElementById('test-error-overlay');
+  const errorTextEl  = document.getElementById('test-error-text');
+  const errorCodeEl  = document.getElementById('test-error-code');
+  const okOvEl       = document.getElementById('test-ok-overlay');
+  const barEl        = document.getElementById('test-bar');
+  const rpList       = document.getElementById('rp-list');
+  const summaryEl    = document.getElementById('test-summary');
+  const summaryPre   = document.getElementById('summary-pre');
+  const resultsPanel = document.getElementById('test-results-panel');
+  const btnStart     = document.getElementById('btn-start-test');
+  const btnNext      = document.getElementById('btn-next-test');
+  const btnSkip      = document.getElementById('btn-skip-test');
+  const chkAuto      = document.getElementById('chk-auto');
+
+  // ── YouTube player (same playerVars as the game) ───────────────
+  window.onYouTubeIframeAPIReady = function () {
+    player = new YT.Player('test-yt-embed', {
+      height: '100%',
+      width:  '100%',
+      playerVars: {
+        autoplay:       1,
+        controls:       1,
+        modestbranding: 1,
+        rel:            0,
+        fs:             0,
+        iv_load_policy: 3,
+        cc_load_policy: 0,
+        playsinline:    1,
+      },
+      events: {
+        onReady: ()    => { ytReady = true; },
+        onStateChange: handleStateChange,
+        onError:       handleError,
+      },
+    });
+  };
+
+  function handleStateChange(e) {
+    if (!testRunning || currentIdx < 0) return;
+
+    if (e.data === YT.PlayerState.PLAYING) {
+      // Video is playing — wait 2s to confirm YouTube doesn't cut it
+      clearTimeout(hardTimer);
+      clearTimeout(confirmTimer);
+      waitingOk = true;
+      setStatus('testing', '▶ Reproduciendo… (confirmando)');
+      confirmTimer = setTimeout(() => {
+        waitingOk = false;
+        recordResult(true);
+      }, 2000);
+    }
+  }
+
+  function handleError(e) {
+    if (!testRunning || currentIdx < 0) return;
+    clearTimeout(hardTimer);
+    clearTimeout(confirmTimer);
+    waitingOk = false;
+    const msgs = {
+      100: 'Video eliminado o privado (100)',
+      101: 'Embed bloqueado por el dueño (101)',
+      150: 'Embed bloqueado por el dueño (150)',
+    };
+    showError(msgs[e.data] || `Error desconocido (${e.data})`);
+    recordResult(false, msgs[e.data] || `error ${e.data}`);
+  }
+
+  // ── Test flow ──────────────────────────────────────────────────
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function startTest() {
+    const chkShuffle = document.getElementById('chk-shuffle');
+    testQueue   = chkShuffle.checked ? shuffle(SONGS) : [...SONGS];
+    currentIdx  = 0;
+    results     = [];
+    rpList.innerHTML = '';
+    testRunning = true;
+    btnStart.disabled = true;
+    btnNext.disabled  = false;
+    btnSkip.disabled  = false;
+    loadCurrent();
+  }
+
+  function loadCurrent() {
+    if (currentIdx >= testQueue.length) { showSummary(); return; }
+
+    const song = testQueue[currentIdx];
+    clearOverlays();
+    clearTimeout(autoTimer);
+    clearTimeout(confirmTimer);
+    clearTimeout(hardTimer);
+    waitingOk = false;
+
+    // Update UI
+    const pct = Math.round((currentIdx / testQueue.length) * 100);
+    barEl.style.width      = pct + '%';
+    counterEl.textContent  = `${currentIdx + 1} / ${testQueue.length}`;
+    songNameEl.textContent = `${song.title} — ${song.artist}`;
+    titleEl.textContent    = song.title;
+    artistEl.textContent   = song.artist;
+    setStatus('testing', '⏳ Cargando…');
+
+    // Hard timeout: 9s with no PLAYING = blocked/stuck
+    hardTimer = setTimeout(() => {
+      showError('Sin respuesta (timeout)');
+      recordResult(false, 'timeout');
+    }, 9000);
+
+    if (ytReady && player && typeof player.loadVideoById === 'function') {
+      player.loadVideoById({ videoId: song.videoId, startSeconds: 0 });
+    }
+  }
+
+  function recordResult(ok, reason) {
+    const song = SONGS[currentIdx];
+    results.push({ song, ok, reason });
+
+    // Add to results panel
+    const row = document.createElement('div');
+    row.className = 'rp-row ' + (ok ? 'ok' : 'fail');
+    row.textContent = `${ok ? '✅' : '❌'} #${song.id} ${song.title}`;
+    rpList.appendChild(row);
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    if (ok) {
+      okOvEl.classList.remove('hidden');
+      setStatus('ok', '✅ OK');
+    } else {
+      setStatus('fail', '❌ Bloqueado');
+    }
+
+    // Auto-advance
+    if (chkAuto.checked) {
+      const delay = ok ? 3000 : 5000; // stay longer on errors so user can see
+      autoTimer = setTimeout(advance, delay);
+    }
+  }
+
+  function advance() {
+    clearTimeout(autoTimer);
+    clearTimeout(confirmTimer);
+    clearTimeout(hardTimer);
+    if (player && typeof player.stopVideo === 'function') player.stopVideo();
+    currentIdx++;
+    loadCurrent();
+  }
+
+  // ── Overlays ───────────────────────────────────────────────────
+  function clearOverlays() {
+    errorOvEl.classList.add('hidden');
+    okOvEl.classList.add('hidden');
+    errorTextEl.textContent = '';
+    errorCodeEl.textContent = '';
+  }
+
+  function showError(msg) {
+    errorOvEl.classList.remove('hidden');
+    errorTextEl.textContent = msg;
+  }
+
+  function setStatus(cls, text) {
+    statusEl.className = 'test-status ' + cls;
+    statusEl.textContent = text;
+  }
+
+  // ── Summary ────────────────────────────────────────────────────
+  function showSummary() {
+    testRunning = false;
+    btnNext.disabled = true;
+    btnSkip.disabled = true;
+    const blocked = results.filter(r => !r.ok);
+    const lines = blocked.length === 0
+      ? '¡Todos los videos funcionan correctamente! 🎉'
+      : blocked.map(r =>
+          `id: ${String(r.song.id).padStart(3)}  videoId: "${r.song.videoId}"  →  ${r.song.title} — ${r.song.artist}`
+        ).join('\n');
+    summaryPre.textContent = `${results.length - blocked.length} OK  |  ${blocked.length} bloqueados\n\n${lines}`;
+    summaryEl.classList.add('visible');
+    barEl.style.width = '100%';
+  }
+
+  // ── Button events ──────────────────────────────────────────────
+  btnStart.addEventListener('click', () => {
+    if (ytReady) startTest();
+    else {
+      btnStart.textContent = 'Esperando YouTube API…';
+      const wait = setInterval(() => {
+        if (ytReady) { clearInterval(wait); startTest(); }
+      }, 200);
+    }
+  });
+
+  btnNext.addEventListener('click', () => {
+    if (!testRunning) return;
+    // If waiting for confirm, record as OK now
+    if (waitingOk) { clearTimeout(confirmTimer); waitingOk = false; recordResult(true); }
+    else advance();
+  });
+
+  btnSkip.addEventListener('click', () => {
+    if (!testRunning) return;
+    clearTimeout(confirmTimer);
+    clearTimeout(hardTimer);
+    waitingOk = false;
+    // Don't record, just skip
+    currentIdx++;
+    loadCurrent();
+  });
+
+  document.getElementById('btn-toggle-results').addEventListener('click', () => {
+    resultsPanel.classList.toggle('open');
+  });
+
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    summaryEl.classList.remove('visible');
+    btnStart.disabled = false;
+    btnStart.textContent = '▶ Iniciar test';
+    currentIdx = -1;
+    testRunning = false;
+    barEl.style.width = '0%';
+    clearOverlays();
+    titleEl.textContent  = '';
+    artistEl.textContent = '';
+    songNameEl.textContent = 'Presioná Iniciar para comenzar';
+    counterEl.textContent  = '0 / 100';
+    setStatus('testing', '—');
+  });
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
