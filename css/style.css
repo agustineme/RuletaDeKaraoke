@@ -1207,6 +1207,8 @@ body::before {
   padding: 16px 24px;
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 20px;
   background: rgba(45,27,105,0.7);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--border);
@@ -1634,16 +1636,15 @@ body::before {
 .credit-link {
   position: fixed;
   bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.65rem;
+  right: 14px;
+  font-size: 0.72rem;
   font-family: var(--font-body);
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.22);
   text-decoration: none;
   z-index: 200;
   white-space: nowrap;
   transition: color 0.25s;
 }
-.credit-link:hover { color: rgba(255,255,255,0.55); }
+.credit-link:hover { color: rgba(255,255,255,0.6); }
