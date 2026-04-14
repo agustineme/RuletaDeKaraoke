@@ -204,16 +204,17 @@ function spinVisor(song, challenge, onComplete) {
 // Clicks are timed to match the quintic ease-out of the tape animation
 // (many clicks/sec at the start, slowing to a stop over 3.7 s).
 
-function playSpinSound() {
+// spinDur: seconds, preItems: number of tape items before target
+function playSpinSound(spinDur = 3.7, preItems = TAPE_PRE_ITEMS) {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx  = new AudioCtx();
-    const now  = ctx.currentTime;
-    const dur  = 3.8; // seconds — slightly past DURATION so ticks finish cleanly
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    const dur = spinDur + 0.1;
 
-    // ── Subtle rolling noise underneath ──────────────────────────
-    const bufLen  = Math.ceil(ctx.sampleRate * dur);
+    // ── Rolling noise underneath ──────────────────────────────────
+    const bufLen   = Math.ceil(ctx.sampleRate * dur);
     const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
     const nd       = noiseBuf.getChannelData(0);
     for (let i = 0; i < bufLen; i++) nd[i] = Math.random() * 2 - 1;
@@ -227,9 +228,9 @@ function playSpinSound() {
     bp.Q.value = 0.7;
 
     const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0,    now);
-    noiseGain.gain.linearRampToValueAtTime(0.035, now + 0.08);
-    noiseGain.gain.setValueAtTime(0.035, now + dur - 0.5);
+    noiseGain.gain.setValueAtTime(0,     now);
+    noiseGain.gain.linearRampToValueAtTime(0.07, now + 0.08);
+    noiseGain.gain.setValueAtTime(0.07,  now + dur - 0.5);
     noiseGain.gain.linearRampToValueAtTime(0, now + dur);
 
     noiseSrc.connect(bp);
@@ -239,17 +240,14 @@ function playSpinSound() {
     noiseSrc.stop(now + dur);
 
     // ── Clicks — one per tape item, timed via inverse quintic ────
-    // TAPE_PRE_ITEMS = 48; animation = 3700 ms; ease = 1-(1-t)^5
-    // Inverse: t = 1 - (1-eased)^0.2  →  gives real time for each item
-    const items = TAPE_PRE_ITEMS; // 48
-    for (let i = 0; i <= items; i++) {
-      const eased   = i / items;
-      const t       = 1 - Math.pow(Math.max(0, 1 - eased), 0.2);
-      const tickAt  = now + t * 3.7;
+    for (let i = 0; i <= preItems; i++) {
+      const eased  = i / preItems;
+      const t      = 1 - Math.pow(Math.max(0, 1 - eased), 0.2);
+      const tickAt = now + t * spinDur;
 
       const tGain = ctx.createGain();
       tGain.gain.setValueAtTime(0,    tickAt);
-      tGain.gain.linearRampToValueAtTime(0.22, tickAt + 0.003);
+      tGain.gain.linearRampToValueAtTime(0.45, tickAt + 0.003);
       tGain.gain.exponentialRampToValueAtTime(0.001, tickAt + 0.045);
 
       const osc = ctx.createOscillator();
@@ -264,6 +262,32 @@ function playSpinSound() {
     }
 
     setTimeout(() => { try { ctx.close(); } catch (_) {} }, (dur + 0.5) * 1000);
+  } catch (_) {}
+}
+
+function playDingSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    // Two-tone bell: fundamental + fifth
+    [[1047, 0.5], [1568, 0.25]].forEach(([freq, vol]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0,   now);
+      gain.gain.linearRampToValueAtTime(vol, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.6);
+    });
+
+    setTimeout(() => { try { ctx.close(); } catch (_) {} }, 2200);
   } catch (_) {}
 }
 
@@ -310,11 +334,13 @@ function doSpin(isReroll = false) {
     const targetY = buildTape('tape-reroll', songPool, song, songLabelFn, 'tape-item--song', hItem, 22);
     const tapeEl  = document.getElementById('tape-reroll');
 
+    playSpinSound(1.8, 22);
     animateTape(tapeEl, targetY, 1800, () => {
       setTimeout(() => {
         hideRerollOverlay();
         updateResultSong();
         disableResultActions(false);
+        playDingSound();
       }, 320);
     });
   }
@@ -335,6 +361,7 @@ function updateSpinPlayerBadge() {
 // ── Result screen ──────────────────────────────────────────────
 
 function showResult() {
+  playDingSound();
   const song      = state.currentSong;
   const challenge = state.currentChallenge;
 
