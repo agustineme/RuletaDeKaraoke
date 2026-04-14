@@ -4,7 +4,7 @@
 
 const SONGS = [
   { id: 1,   title: "Lamento Boliviano",             artist: "Los Enanitos Verdes",                         year: 1994, videoId: "P6xy7zGkyUM" },
-  { id: 2,   title: "De Música Ligera",               artist: "Soda Stereo",                                 year: 1990, videoId: "mjJ-ybMo4ZM" },
+  { id: 2,   title: "De Música Ligera",               artist: "Soda Stereo",                                 year: 1990, videoId: "Ig_u_Mty0cU" },
   { id: 3,   title: "Persiana Americana",             artist: "Soda Stereo",                                 year: 1986, videoId: "DCiW03wZf7A" },
   { id: 4,   title: "Cuando Pase el Temblor",         artist: "Soda Stereo",                                 year: 1985, videoId: "h4LvHGQHoKs" },
   { id: 5,   title: "Flaca",                          artist: "Andrés Calamaro",                             year: 1997, videoId: "XzZyn4wBXLY" },
@@ -98,11 +98,11 @@ const SONGS = [
   { id: 93,  title: "Tusa",                           artist: "KAROL G, Nicki Minaj",                        year: 2019, videoId: "-4DJEjha5u8" },
   { id: 94,  title: "Si Antes Te Hubiera Conocido",   artist: "KAROL G",                                     year: 2024, videoId: "fYGSv0e6zWA" },
   { id: 95,  title: "TQG",                            artist: "KAROL G, Shakira",                            year: 2023, videoId: "VMpaaThux2c" },
-  { id: 96,  title: "Hawái",                          artist: "Maluma",                                      year: 2020, videoId: "9Hud4IdhOOE" },
+  { id: 96,  title: "Felices los 4",                  artist: "Maluma",                                      year: 2017, videoId: "GIoE49u-hHQ" },
   { id: 97,  title: "LA CANCIÓN",                     artist: "J Balvin, Bad Bunny",                         year: 2019, videoId: "8smIKPk2Noc" },
   { id: 98,  title: "Tití Me Preguntó",               artist: "Bad Bunny",                                   year: 2022, videoId: "3D_RpqONxtw" },
   { id: 99,  title: "Me Porto Bonito",                artist: "Bad Bunny, Chencho Corleone",                 year: 2022, videoId: "zGaklJWgrwE" },
-  { id: 100, title: "BESO",                           artist: "ROSALÍA, Rauw Alejandro",                     year: 2023, videoId: "KW4R3r50Urs" },
+  { id: 100, title: "Me Haces Tanto Bien",             artist: "Amistades Peligrosas",                        year: 1991, videoId: "xtWUXZt6xI4" },
 ];
 
 const CHALLENGES = {
