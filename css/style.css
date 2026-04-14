@@ -1595,3 +1595,55 @@ body::before {
   .result-card       { padding: 16px 18px; }
   .challenge-emoji   { font-size: 1.8rem; }
 }
+
+/* ── Back buttons ─────────────────────────────────────────────── */
+.btn-back {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: color var(--transition);
+  z-index: 10;
+}
+.btn-back:hover { color: rgba(255,255,255,0.75); }
+
+.btn-back-player {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: var(--radius-pill);
+  color: rgba(255,255,255,0.45);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.btn-back-player:hover {
+  color: rgba(255,255,255,0.85);
+  border-color: rgba(255,255,255,0.45);
+}
+
+/* ── Credit link ──────────────────────────────────────────────── */
+.credit-link {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.18);
+  text-decoration: none;
+  z-index: 200;
+  white-space: nowrap;
+  transition: color 0.25s;
+}
+.credit-link:hover { color: rgba(255,255,255,0.55); }

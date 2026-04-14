@@ -109,6 +109,9 @@
        ══════════════════════════════════════════════════════ -->
   <div id="screen-result" class="screen hidden">
 
+    <!-- Back to home -->
+    <button class="btn-back" id="btn-back-result" aria-label="Volver al inicio">←</button>
+
     <!-- Player badge -->
     <div class="result-player-badge hidden" id="result-player-badge"></div>
 
@@ -295,15 +298,19 @@
     </div>
 
     <div class="player-footer">
-      <button class="btn-end-round" id="pv2-btn-end-round">⏭ SIGUIENTE RONDA</button>
+      <button class="btn-back-player" id="pv2-btn-back">← Volver</button>
+      <button class="btn-end-round"   id="pv2-btn-end-round">⏭ SIGUIENTE RONDA</button>
     </div>
 
   </div><!-- /screen-player-v2 -->
 
+  <!-- Crédito fijo — visible en todas las pantallas -->
+  <a class="credit-link" href="https://www.instagram.com/agustineme/" target="_blank" rel="noopener">Creado por Agustin Eme</a>
+
   <!-- ── Scripts ──────────────────────────────────────────────── -->
   <script src="js/data.js?v=7"></script>
   <script src="js/wheel.js?v=7"></script>
-  <script src="js/app.js?v=23"></script>
+  <script src="js/app.js?v=24"></script>
   <!-- YouTube IFrame API lives inside karaoke-player.html, not here -->
 
 </body>

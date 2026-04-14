@@ -771,8 +771,21 @@ function bindEvents() {
   // Player screen V1 (kept)
   document.getElementById('btn-end-round').addEventListener('click', endRound);
 
+  // Back to home from result (abandon round, no player advance)
+  document.getElementById('btn-back-result').addEventListener('click', () => {
+    showScreen('home');
+  });
+
   // Player screen V2
   document.getElementById('pv2-btn-end-round').addEventListener('click', endRound);
+
+  // Back to home from player (stop video, no player advance)
+  document.getElementById('pv2-btn-back').addEventListener('click', () => {
+    _iframeErrorShown = false;
+    _postToFrame({ cmd: 'stop' });
+    document.getElementById('screen-player-v2').classList.add('pv2-off');
+    showScreen('home');
+  });
 
   document.getElementById('pv2-btn-reload').addEventListener('click', () => {
     if (!state.currentSong) return;
